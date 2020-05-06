@@ -24,6 +24,10 @@ cat > $payload <&0
 
 cd $source
 
+if [ x$(jq -r '.params.buildkit // "false"' < $payload) != xfalse ] ; then
+  export DOCKER_BUILDKIT=1
+fi
+
 insecure_registries=$(jq -r '.source.insecure_registries // [] | join(" ")' < $payload)
 registry_mirror=$(jq -r '.source.registry_mirror // ""' < $payload)
 
@@ -102,6 +106,7 @@ build=$(jq -r '.params.build // ""' < $payload)
 cache=$(jq -r '.params.cache' < $payload)
 cache_tag=$(jq -r ".params.cache_tag // \"${tag_name}\"" < $payload)
 cache_from=$(jq -r '.params.cache_from // empty' < $payload)
+cache_from_registry=$(jq -r '.params.cache_from_registry // empty' < $payload)
 dockerfile=$(jq -r ".params.dockerfile // \"${build}/Dockerfile\"" < $payload)
 
 load_file=$(jq -r '.params.load_file // ""' < $payload)
@@ -152,8 +157,8 @@ elif [ -n "$build" ]; then
     fi
   fi
 
-  if [ -n "$cache_from" ]; then
-    for cache_from_dir in $(echo $cache_from | jq -r '.[]'); do
+  if [ -n "$cache_from" -o -n "$cache_from_registry" ]; then
+    for cache_from_dir in $(echo $cache_from | jq -r '.[]' ; echo $cache_from_registry | jq -r '.[]'); do
       cache_image="$(cat "${cache_from_dir}/repository")"
       cache_tag="$(cat "${cache_from_dir}/tag")"
       cache_from_args+=("--cache-from ${cache_image}:${cache_tag}")
