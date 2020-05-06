@@ -182,6 +182,10 @@ version is the image's digest.
   { "EMAIL": "me@yopmail.com", "HOW_MANY_THINGS": 1, "DO_THING": false }
   ```
 
+* `buildkit`: *Optional.* If anything other than `false`, this will enable
+   BuildKit. BuildKit is required for some other features, and may produce
+   slightly faster builds.
+
 * `cache`: *Optional.* Default `false`. When the `build` parameter is set,
   first pull `image:tag` from the Docker registry (so as to use cached
   intermediate images when building). This will cause the resource to fail
@@ -195,6 +199,16 @@ version is the image's digest.
   allows more than one image to be specified, which is useful for multi-stage
   Dockerfiles. If you want to cache an image used in a `FROM` step, you should
   put it in `load_bases` instead.
+
+* `cache_from_registry`: *Optional.* This is best used in conjunction with
+  `buildkit: true` and setting the build-arg `BUILDKIT_INLINE_CACHE=1` (see
+  [docs](https://docs.docker.com/engine/reference/commandline/build/#specifying-external-cache-sources)).
+  This has the same structure as `cache_from`, but pulls the images from the
+  image registry. When used with `BUILDKIT_INLINE_CACHE`, this differs from
+  `cache` in that it doesn't pull the image unless there's a cache hit, and
+   it doesn't require the image to exist in the registry. You probably want
+   to use the same tag with `cache_from_registry` and `additional_tags`, so
+   it will both use the cache and update it after the build.
 
 * `cache_tag`: *Optional.* Default `tag`. The specific tag to pull before
   building when `cache` parameter is set. Instead of pulling the same tag
