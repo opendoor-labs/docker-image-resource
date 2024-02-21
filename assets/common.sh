@@ -121,6 +121,10 @@ log_in() {
   fi
 }
 
+create_cloud_builder() {
+  docker buildx create --driver cloud opendoor/default
+}
+
 private_registry() {
   local repository="${1}"
 

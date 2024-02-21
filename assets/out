@@ -54,6 +54,9 @@ start_docker \
 	"$registry_mirror"
 log_in "$username" "$password" "$registry"
 
+# TODO: wrap with a flag, get builder from config, etc.
+create_cloud_builder
+
 tag_source=$(jq -r '.source.tag // "latest"' < $payload)
 tag_params=$(jq -r '.params.tag_file // ""' < $payload)
 # for backwards compatibility, check `tag` if `tag_file` is empty
@@ -244,7 +247,16 @@ elif [ -n "$build" ]; then
     done    
   fi
 
-  docker build -t "${repository}:${tag_name}" "${target[@]}" "${expanded_build_args[@]}" "${expanded_labels[@]}" -f "$dockerfile" $cache_from "$build"
+  docker buildx build \
+    --builder cloud-opendoor-default \
+    -t "${repository}:${tag_name}" \
+    "${target[@]}" \
+    "${expanded_build_args[@]}" \
+    "${expanded_labels[@]}" \
+    -f "$dockerfile" \
+    $cache_from \
+    "$build"
+
 elif [ -n "$load_file" ]; then
   if [ -n "$load_repository" ]; then
     docker load -i "$load_file"
