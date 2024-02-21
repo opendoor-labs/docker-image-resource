@@ -122,7 +122,7 @@ log_in() {
 }
 
 create_cloud_builder() {
-  docker buildx create --driver cloud opendoor/default
+  docker buildx create --use --driver cloud opendoor/default
 }
 
 private_registry() {

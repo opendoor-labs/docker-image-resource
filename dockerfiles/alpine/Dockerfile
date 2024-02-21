@@ -17,6 +17,7 @@ RUN set -e; \
 FROM alpine:edge AS resource
 RUN apk --no-cache add \
       bash \
+      curl \
       docker \
       jq \
       ca-certificates \
@@ -25,6 +26,13 @@ RUN apk --no-cache add \
     ;
 COPY --from=builder /assets /opt/resource
 RUN ln -s /opt/resource/ecr-login /usr/local/bin/docker-credential-ecr-login
+
+# Install build cloud. See https://docs.docker.com/build/cloud/ci/
+RUN mkdir -vp ~/.docker/cli-plugins/ && \
+  curl --silent -L --output ~/.docker/cli-plugins/docker-buildx \
+    $(curl -s https://raw.githubusercontent.com/docker/actions-toolkit/main/.github/buildx-lab-releases.json \
+      | jq -r ".latest.assets[] | select(endswith(\"linux-amd64\"))") && \
+  chmod a+x ~/.docker/cli-plugins/docker-buildx
 
 # stage: tests
 FROM resource AS tests
