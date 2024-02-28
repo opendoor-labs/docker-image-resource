@@ -247,15 +247,35 @@ elif [ -n "$build" ]; then
     done    
   fi
 
-  docker buildx build \
-    --builder cloud-opendoor-default \
-    -t "${repository}:${tag_name}" \
-    "${target[@]}" \
-    "${expanded_build_args[@]}" \
-    "${expanded_labels[@]}" \
-    -f "$dockerfile" \
-    $cache_from \
-    "$build"
+  tags=("--tag" "${repository}:${tag_name}")
+  if [ "$need_tag_as_latest" = "true" ] && [ "${tag_name}" != "latest"  ]; then
+    tags+=("--tag" "${repository}:latest")
+    echo "tagging ${repository}:${tag_name} as latest"
+  fi
+
+  if [ -n "$additional_tag_names" ]    ; then
+    for additional_tag in $additional_tag_names; do
+      tags+=("--tag" "${repository}:${additional_tag}")
+      echo "tagging ${repository}:${tag_name} as ${additional_tag}"
+    done
+  fi
+
+  # careful to not let 'tee' mask exit status
+  {
+    if ! docker buildx build \
+      --builder cloud-opendoor-default \
+      --push \
+      "${tags[@]}" \
+      "${target[@]}" \
+      "${expanded_build_args[@]}" \
+      "${expanded_labels[@]}" \
+      -f "$dockerfile" \
+      $cache_from \
+      "$build"
+    then
+      touch /tmp/push-failed
+    fi
+  } | tee push-output
 
 elif [ -n "$load_file" ]; then
   if [ -n "$load_repository" ]; then
@@ -277,40 +297,11 @@ fi
 
 image_id="$(image_from_tag "$repository" "$tag_name")"
 
-# afaict there's no clean way to get the digest after a push. docker prints
-# this line at the end at least:
-#
-#   (tagname): digest: (digest) size: (size)
-#
-# so just parse it out
-
-# careful to not let 'tee' mask exit status
-
-{
-  if ! docker push "${repository}:${tag_name}"; then
-    touch /tmp/push-failed
-  fi
-} | tee push-output
-
 if [ -e /tmp/push-failed ]; then
   exit 1
 fi
 
-digest="$(grep 'digest' push-output | awk '{print $3}')"
-
-if [ "$need_tag_as_latest" = "true" ] && [ "${tag_name}" != "latest"  ]; then
-  docker tag "${repository}:${tag_name}" "${repository}:latest"
-  docker push "${repository}:latest"
-  echo "${repository}:${tag_name} tagged as latest"
-fi
-
-if [ -n "$additional_tag_names" ]    ; then
-  for additional_tag in $additional_tag_names; do
-    docker tag "${repository}:${tag_name}" "${repository}:${additional_tag}"
-    docker push "${repository}:${additional_tag}"
-    echo "${repository}:${tag_name} tagged as ${additional_tag}"
-  done
-fi
+digest="$(egrep -oh 'sha256:[a-f0-9]{64}' | tail -n 1)"
 
 jq -n "{
   version: {

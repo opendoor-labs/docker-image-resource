@@ -19,6 +19,7 @@ RUN apk --no-cache add \
       bash \
       curl \
       docker \
+      git \
       jq \
       ca-certificates \
       xz \
