@@ -121,8 +121,13 @@ log_in() {
   fi
 }
 
-create_cloud_builder() {
-  docker buildx create --use --driver cloud opendoor/default
+create_s3_builder() {
+  docker buildx create \
+    --name=s3 \
+    --bootstrap \
+    --use \
+    --driver=docker-container \
+    --driver-opt=image=moby/buildkit:v0.13.1
 }
 
 private_registry() {
