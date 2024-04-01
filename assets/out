@@ -303,7 +303,7 @@ if [ -e /tmp/push-failed ]; then
   exit 1
 fi
 
-digest="$(egrep -oh 'sha256:[a-f0-9]{64}' push-output | tail -n 1)"
+digest="$(egrep -oh '@sha256:[a-f0-9]{64}' push-output | tail -n 1 | cut -c2-)"
 
 jq -n "{
   version: {
