@@ -38,7 +38,11 @@ func main() {
 	rECRRepo, err := regexp.Compile(`[a-zA-Z0-9][a-zA-Z0-9_-]*\.dkr\.ecr\.[a-zA-Z0-9][a-zA-Z0-9_-]*\.amazonaws\.com(\.cn)?[^ ]*`)
 	fatalIf("failed to compile ECR regex", err)
 
-	var request CheckRequest
+	request := CheckRequest{
+		Source: Source{
+			RegistryMirror: "http://docker-mirror:5000",
+		},
+	}
 	err = json.NewDecoder(os.Stdin).Decode(&request)
 	fatalIf("failed to read request", err)
 
@@ -119,6 +123,8 @@ func headDigest(client *http.Client, manifestURL, repository, tag string) (strin
 	manifestRequest, err := http.NewRequest("HEAD", manifestURL, nil)
 	fatalIf("failed to build manifest request", err)
 	manifestRequest.Header.Add("Accept", "application/vnd.docker.distribution.manifest.v2+json")
+	manifestRequest.Header.Add("Accept", "application/vnd.oci.image.manifest.v1+json")
+	manifestRequest.Header.Add("Accept", "application/vnd.oci.image.index.v1+json")
 	manifestRequest.Header.Add("Accept", "application/json")
 
 	manifestResponse, err := client.Do(manifestRequest)
@@ -146,6 +152,8 @@ func fetchDigest(client *http.Client, manifestURL, repository, tag string) (stri
 	manifestRequest, err := http.NewRequest("GET", manifestURL, nil)
 	fatalIf("failed to build manifest request", err)
 	manifestRequest.Header.Add("Accept", "application/vnd.docker.distribution.manifest.v2+json")
+	manifestRequest.Header.Add("Accept", "application/vnd.oci.image.manifest.v1+json")
+	manifestRequest.Header.Add("Accept", "application/vnd.oci.image.index.v1+json")
 	manifestRequest.Header.Add("Accept", "application/json")
 
 	manifestResponse, err := client.Do(manifestRequest)
