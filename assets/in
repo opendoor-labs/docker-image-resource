@@ -24,7 +24,7 @@ cat > $payload <&0
 
 insecure_registries=$(jq -r '.source.insecure_registries // [] | join(" ")' < $payload)
 
-registry_mirror=$(jq -r '.source.registry_mirror // ""' < $payload)
+registry_mirror=$(jq -r '.source.registry_mirror // "http://docker-mirror:5000"' < $payload)
 
 username=$(jq -r '.source.username // ""' < $payload)
 password=$(jq -r '.source.password // ""' < $payload)
